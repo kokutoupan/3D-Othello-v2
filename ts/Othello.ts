@@ -1,52 +1,21 @@
-import { MyVec2 } from "./MyVec2";
-import { createBuffer } from "./index";
+import { MyVec2 } from "./MyVec";
 import { mat4 } from "gl-matrix";
+import { OthelloStone } from "./OthelloStone";
 
 export class Othello {
   private lineNum: number;
-  private gl: WebGL2RenderingContext;
-  private vertexAttribLocation: number;
-  private colorAttribLocation: number;
 
-  private stonesVertexBuffer: WebGLBuffer;
-  private stonesIndexBuffer: WebGLBuffer;
-  private StonesIndexSize: number;
-
-  private readonly VERTEX_SIZE = 3; // vec3
-  private readonly COLOR_SIZE = 4; // vec4
-
-  private readonly STRIDE = (3 + 4) * Float32Array.BYTES_PER_ELEMENT;
-  private readonly POSITION_OFFSET = 0;
-  private readonly COLOR_OFFSET = 3 * Float32Array.BYTES_PER_ELEMENT;
-
+  private othelloStone: OthelloStone;
 
   constructor(program: WebGLProgram, gl: WebGL2RenderingContext) {
-    this.lineNum = Math.sqrt(this.stones.length);
-    this.gl = gl;
-    this.vertexAttribLocation = gl.getAttribLocation(program, 'vertexPosition');
-    this.colorAttribLocation = gl.getAttribLocation(program, 'color');
-
-
-
-    // this.#setBoard(program);
-    const stoneData = this.createStone();
-    const vertices = stoneData.v;
-    const indices = stoneData.i;
-    this.StonesIndexSize = indices.length;
-
-    this.stonesVertexBuffer = createBuffer(gl, gl.ARRAY_BUFFER, vertices);
-    this.stonesIndexBuffer = createBuffer(gl, gl.ELEMENT_ARRAY_BUFFER, indices);
-    // this.#init(program,gl);
+    this.lineNum = 8;
+    this.stones = this.#createStones();
+    this.othelloStone = new OthelloStone(program, gl);
   }
 
-  stones = [
-    //1黒,2白
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 1, 2, 0, 0, 0, 0, 0, 0, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  ];
+  private stones: Int8Array;
 
-  nowSquare = new MyVec2(3, 3);
+  SelectPos = new MyVec2(3, 3);
   turn = 1;
 
   keyDirection = {
@@ -74,30 +43,12 @@ export class Othello {
     return false;
   }
 
-  // #setBoard(program: WebGLProgram) {
-  //   const vertices = new Float32Array([
-  //     -180.0, -5.0, -180.0,  // 座標
-  //     0.0, 1.0, 0.0, 1.0,      // 色
-  //     -180.0, -5.0, 180.0,
-  //     1.0, 0.0, 0.0, 1.0,
-  //     180.0, -5.0, -180.0,
-  //     1.0, 0.0, 0.0, 1.0,
-  //     180.0, -5.0, 180.0,
-  //     0.0, 0.0, 1.0, 1.0
-  //   ]);
-  //   const indices = new Uint16Array([0, 1, 2, 1, 3, 2]);
-
-  //   return {0:createBuffer(this.gl,this.gl.ARRAY_BUFFER, vertices),1: createBuffer(this.gl,this.gl.ELEMENT_ARRAY_BUFFER, indices),2: indices.length}
-  //   // this.boardVertexBuffer = createBuffer(this.gl,this.gl.ARRAY_BUFFER, vertices);
-  //   // this.boardIndexBuffer = createBuffer(this.gl,this.gl.ELEMENT_ARRAY_BUFFER, indices);
-  //   // this.boardIndexSize = indices.length;
-  // }
 
   getStone(pos: MyVec2) {
     return this.stones[this.lineNum * pos.y + pos.x];
   }
 
-  getReverseStone(stone:number) {
+  getReverseStone(stone: number) {
     if (stone === 1) {
       return 2;
     } else if (stone === 2) {
@@ -107,12 +58,12 @@ export class Othello {
     }
   }
 
-  setStone(pos:MyVec2, type:number) {
+  setStone(pos: MyVec2, type: number) {
     this.stones[this.lineNum * pos.y + pos.x] = type;
   }
 
   selectSquare(keyCode: string) {
-    let tmp = new MyVec2(this.nowSquare.x, this.nowSquare.y);
+    let tmp = new MyVec2(this.SelectPos.x, this.SelectPos.y);
     if (keyCode === "KeyA") {
       tmp.add(this.keyDirection.KeyA);
     }
@@ -127,18 +78,18 @@ export class Othello {
     }
 
     if (!this.#isOver(tmp)) {
-      this.nowSquare = tmp;
+      this.SelectPos = tmp;
     }
 
     if (keyCode === "Enter") {
-      if (this.getStone(this.nowSquare) === 0) {
-        const OverTurnData = this.checkOverTurn(this.nowSquare, this.turn);
+      if (this.getStone(this.SelectPos) === 0) {
+        const OverTurnData = this.checkOverTurn(this.SelectPos, this.turn);
         console.log(OverTurnData);
         if (OverTurnData.num != 0) {
-          this.setStone(this.nowSquare, this.turn);
+          this.setStone(this.SelectPos, this.turn);
           this.#changeStones(
             OverTurnData.lineStones,
-            this.nowSquare,
+            this.SelectPos,
             this.turn
           );
           this.#changeTurn();
@@ -146,19 +97,12 @@ export class Othello {
       }
     }
 
-    //console.log(this.nowSquare);
+    //console.log(this.SelectPos);
   }
 
   rotation = 0;
-  drawStone(modelLocation:WebGLUniformLocation, deltaTime:number) {
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.stonesVertexBuffer);
-    this.gl.bindBuffer(this.gl.ELEMENT_ARRAY_BUFFER, this.stonesIndexBuffer);
-
-    this.gl.enableVertexAttribArray(this.vertexAttribLocation);
-    this.gl.enableVertexAttribArray(this.colorAttribLocation);
-
-    this.gl.vertexAttribPointer(this.vertexAttribLocation, this.VERTEX_SIZE, this.gl.FLOAT, false, this.STRIDE, this.POSITION_OFFSET);
-    this.gl.vertexAttribPointer(this.colorAttribLocation, this.COLOR_SIZE, this.gl.FLOAT, false, this.STRIDE, this.COLOR_OFFSET);
+  drawStone(modelLocation: WebGLUniformLocation, deltaTime: number) {
+    this.othelloStone.setData();
     let modelMat = mat4.create();
     let distance = 45;
     let offset = [
@@ -169,8 +113,8 @@ export class Othello {
     this.stones.forEach((data, index) => {
       let up = 0;
       if (
-        this.nowSquare.x === index % this.lineNum &&
-        this.nowSquare.y === Math.floor(index / this.lineNum)
+        this.SelectPos.x === index % this.lineNum &&
+        this.SelectPos.y === Math.floor(index / this.lineNum)
       ) {
         up = 10;
         const isBlack = this.turn === 1 ? 1 : 0;
@@ -184,40 +128,24 @@ export class Othello {
               distance * Math.floor(index / this.lineNum) - offset[1],
             ]
           );
-          this.gl.uniformMatrix4fv(modelLocation, false, modelMat);
-
-          this.gl.drawElements(this.gl.TRIANGLES, this.StonesIndexSize, this.gl.UNSIGNED_SHORT, 0);
+          this.othelloStone.drawStone(modelLocation, modelMat);
+          return;
         }
       }
 
-      if (data === 1) {
+      if (data === 1 || data === 2) {
         mat4.fromRotationTranslation(
           modelMat,
-          [1, 0, 0, 0],
+          [2 - data, 0, 0, 0],
           [
             distance * (index % this.lineNum) - offset[0],
             up,
             distance * Math.floor(index / this.lineNum) - offset[1],
           ]
         );
-        this.gl.uniformMatrix4fv(modelLocation, false, modelMat);
-
-        this.gl.drawElements(this.gl.TRIANGLES, this.StonesIndexSize, this.gl.UNSIGNED_SHORT, 0);
-      } else if (data === 2) {
-        //console.log(index, '白');
-        mat4.fromRotationTranslation(
-          modelMat,
-          [0, 0, 0, 0],
-          [
-            distance * (index % this.lineNum) - offset[0],
-            up,
-            distance * Math.floor(index / this.lineNum) - offset[1],
-          ]
-        );
-        this.gl.uniformMatrix4fv(modelLocation, false, modelMat);
-
-        this.gl.drawElements(this.gl.TRIANGLES, this.StonesIndexSize, this.gl.UNSIGNED_SHORT, 0);
-      } else if (data === 3) {
+        this.othelloStone.drawStone(modelLocation, modelMat);
+      }
+      else if (data === 3) {
         this.rotation += ((0.8 * Math.PI) / 180) * deltaTime;
         mat4.fromTranslation(modelMat, [
           distance * (index % this.lineNum) - offset[0],
@@ -226,27 +154,11 @@ export class Othello {
         ]);
         mat4.rotateX(modelMat, modelMat, this.rotation);
         //console.log(rotation);
-        this.gl.uniformMatrix4fv(modelLocation, false, modelMat);
-
-        this.gl.drawElements(this.gl.TRIANGLES, this.StonesIndexSize, this.gl.UNSIGNED_SHORT, 0);
+        this.othelloStone.drawStone(modelLocation, modelMat);
       }
     });
 
-    // gl.bindBuffer(gl.ARRAY_BUFFER, this.boardVertexBuffer);
-    // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.boardIndexBuffer);
-
-    // gl.enableVertexAttribArray(this.vertexAttribLocation);
-    // gl.enableVertexAttribArray(this.colorAttribLocation);
-
-    // gl.vertexAttribPointer(this.vertexAttribLocation, this.VERTEX_SIZE, gl.FLOAT, false, this.STRIDE, this.POSITION_OFFSET);
-    // gl.vertexAttribPointer(this.colorAttribLocation, this.COLOR_SIZE, gl.FLOAT, false, this.STRIDE, this.COLOR_OFFSET);
-
-    // modelMat = mat4.create();
-    // mat4.identity(modelMat)
-    // gl.uniformMatrix4fv(modelLocation, false, modelMat);
-    // gl.drawElements(gl.TRIANGLES, this.boardIndexSize, gl.UNSIGNED_SHORT, 0);
-    this.gl.flush();
-
+    this.othelloStone.flush();
   }
 
   #changeTurn() {
@@ -272,7 +184,7 @@ export class Othello {
     this.#changeTurn();
   }
 
-  #changeStones(lineStones:Array<[MyVec2,number]>, startPos:MyVec2, mStone:number) {
+  #changeStones(lineStones: Array<[MyVec2, number]>, startPos: MyVec2, mStone: number) {
     lineStones.forEach(([direction, num]) => {
       for (let i = 0; i < num; i++) {
         let tmp = new MyVec2(
@@ -284,7 +196,7 @@ export class Othello {
     });
   }
 
-  checkOverTurn(startPos:MyVec2, mStone:number) {
+  checkOverTurn(startPos: MyVec2, mStone: number) {
     let total = 0;
 
     const allDirection = [
@@ -298,7 +210,7 @@ export class Othello {
       new MyVec2(-1, -1),
     ];
 
-    let lineStones = new Array<[MyVec2,number]>();
+    let lineStones = new Array<[MyVec2, number]>();
 
     allDirection.forEach((direction) => {
       let num = 0;
@@ -334,51 +246,12 @@ export class Othello {
     return { num: total, lineStones: lineStones };
   }
 
-  createStone() {
-    var vertex = new Array(),
-      idx = new Array();
-    const row = 254;
-    const column = 254;
-    const rad = 20.0;
-    const heightRad = 5;
-
-    for (let i = 0; i <= row; i++) {
-      let r = (Math.PI / row) * i;
-      let ry = Math.cos(r);
-      let rr = 1 - ((i - row / 2) / (row / 2)) ** 6;
-      //console.log(rr);
-      let color;
-      if (i < row / 2) {
-        color = [1, 1, 1, 1];
-      } else {
-        color = [0, 0, 0, 1];
-      }
-      for (let ii = 0; ii <= column; ii++) {
-        let tr = ((Math.PI * 2) / column) * ii;
-
-        let nx = rr * Math.cos(tr);
-        let ny = ry;
-        let nz = rr * Math.sin(tr);
-
-        let tx = nx * rad;
-        let ty = ny * heightRad;
-        let tz = nz * rad;
-
-        //console.log(ty);
-        vertex.push(tx, ty, tz);
-        vertex.push(color[0], color[1], color[2], color[3]);
-      }
-    }
-    let r = 0;
-    for (let i = 0; i < row; i++) {
-      for (let ii = 0; ii < column; ii++) {
-        r = (column + 1) * i + ii;
-        idx.push(r, r + 1, r + column + 2);
-        idx.push(r, r + column + 2, r + column + 1);
-      }
-    }
-    let vf = Float32Array.from(vertex);
-    let idxf = Uint16Array.from(idx);
-    return { v: vf, i: idxf };
+  #createStones() {
+    const stones =  new Int8Array(this.lineNum * this.lineNum).fill(0);
+    stones[this.lineNum * 3 + 3] = 1;
+    stones[this.lineNum * 3 + 4] = 2;
+    stones[this.lineNum * 4 + 3] = 2;
+    stones[this.lineNum * 4 + 4] = 1;
+    return stones;
   }
 }

@@ -1,6 +1,9 @@
 import { mat4 } from "gl-matrix";
-import { MyVec2 } from "./MyVec2";
+import { MyVec2,MyVec3 } from "./MyVec";
 import { Othello } from "./Othello";
+import { keySetup } from "./KeyEvents";
+
+//shaderのソースコード
 import fragment_shader from "../shader/fragment_shader.glsl";
 import vertex_shader from "../shader/vertex_shader.glsl";
 
@@ -146,6 +149,8 @@ export const OnKeys = {
   keyL: false,
 };
 
+keySetup();
+
 const shaderSources = [vertex_shader, fragment_shader];
 
 // プログラムの作成
@@ -154,83 +159,8 @@ const vertexShaderSource = shaderSources[0];
 const fragmentShaderSource = shaderSources[1];
 
 const program = createShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
-const othello = new Othello(program, gl);
+export const othello = new Othello(program, gl);
 
-document.addEventListener("keydown", keyDown);
-document.addEventListener("keyup", keyUp);
-
-
-
-function keyDown(event: KeyboardEvent) {
-  console.log(event);
-  othello.selectSquare(event.code);
-
-  if (event.code === "ArrowLeft") {
-    OnKeys.left = true;
-  }
-  if (event.code === "ArrowRight") {
-    OnKeys.right = true;
-  }
-  if (event.code === "ArrowUp") {
-    OnKeys.up = true;
-  }
-  if (event.code === "ArrowDown") {
-    OnKeys.down = true;
-  }
-  if (event.code === "ControlLeft") {
-    OnKeys.ctrl = true;
-  }
-  if (event.code === "ShiftLeft") {
-    OnKeys.shift = true;
-  }
-
-  if (event.code === "KeyK") {
-    OnKeys.keyK = true;
-  }
-  if (event.code === "KeyJ") {
-    OnKeys.keyJ = true;
-  }
-  if (event.code === "KeyH") {
-    OnKeys.keyH = true;
-  }
-  if (event.code === "KeyL") {
-    OnKeys.keyL = true;
-  }
-}
-
-function keyUp(event: KeyboardEvent) {
-  if (event.code === "ArrowLeft") {
-    OnKeys.left = false;
-  }
-  if (event.code === "ArrowRight") {
-    OnKeys.right = false;
-  }
-  if (event.code === "ArrowUp") {
-    OnKeys.up = false;
-  }
-  if (event.code === "ArrowDown") {
-    OnKeys.down = false;
-  }
-  if (event.code === "ControlLeft") {
-    OnKeys.ctrl = false;
-  }
-  if (event.code === "ShiftLeft") {
-    OnKeys.shift = false;
-  }
-
-  if (event.code === "KeyK") {
-    OnKeys.keyK = false;
-  }
-  if (event.code === "KeyJ") {
-    OnKeys.keyJ = false;
-  }
-  if (event.code === "KeyH") {
-    OnKeys.keyH = false;
-  }
-  if (event.code === "KeyL") {
-    OnKeys.keyL = false;
-  }
-}
 
 //
 // 設定の有効化
@@ -242,7 +172,7 @@ gl.enable(gl.CULL_FACE);
 // uniform変数の設定
 //
 
-// モデル変換行列。今回は特に何もしません。
+// モデル変換行列
 const model = mat4.create();
 mat4.identity(model);
 
