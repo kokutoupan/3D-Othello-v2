@@ -1,9 +1,15 @@
-const PATH = require("path");
+const ShaderPATH = "/shader/";
+
 import { mat4 } from "gl-matrix";
 import { MyVec2 } from "./MyVec2";
 import { Othello } from "./Othello";
 
 //const canvas = document.getElementById('canvas');
+
+// const linkElement = document.createElement('link');
+// linkElement.rel = 'stylesheet';
+// linkElement.href = 'styles.css'; // styles.cssのパスを指定
+// document.head.appendChild(linkElement);
 
 const canvas = document.createElement("canvas");
 canvas.id = "canvas";
@@ -18,11 +24,14 @@ if (gl == null) {
   alert("WebGL2 is not supported.");
   process.exit(1);
 }
-gl;
 
-// const mat4 = glMatrix.mat4;
+const infotmp = document.querySelector(".info");
+if (infotmp == null) {
+  console.log("info is null");
+  process.exit(1);
+}
 
-const info = document.querySelector(".info");
+const info = infotmp as HTMLElement;
 info.innerHTML = "FPS:";
 
 const keyDirectionsArray = [
@@ -53,10 +62,10 @@ const keyDirectionsArray = [
 ];
 
 function loadShaders() {
-  const loadVertexShader = fetch(PATH + "vertex_shader.glsl").then((res) =>
+  const loadVertexShader = fetch(ShaderPATH + "vertex_shader.glsl").then((res) =>
     res.text()
   );
-  const loadFragmentShader = fetch(PATH + "fragment_shader.glsl").then((res) =>
+  const loadFragmentShader = fetch(ShaderPATH + "fragment_shader.glsl").then((res) =>
     res.text()
   );
   return Promise.all([loadVertexShader, loadFragmentShader]);
@@ -125,19 +134,34 @@ function createShaderProgram(
   return program;
 }
 
-function createBuffer(
+export function createBuffer(
   gl: WebGL2RenderingContext,
   type: number,
-  typedDataArray: number
+  typedDataArray: Float32Array | Uint16Array
 ) {
   const buffer = gl.createBuffer();
   gl.bindBuffer(type, buffer);
   gl.bufferData(type, typedDataArray, gl.STATIC_DRAW);
   gl.bindBuffer(type, null); // バインド解除
 
+  if (buffer == null) {
+    console.log("buffer is null");
+    process.exit(1);
+  }
   return buffer;
 }
-
+export const OnKeys = {
+  left: false,
+  right: false,
+  up: false,
+  down: false,
+  ctrl: false,
+  shift: false,
+  keyK: false,
+  keyJ: false,
+  keyH: false,
+  keyL: false,
+};
 // シェーダを読み込み終わったら開始します。
 loadShaders().then((shaderSources) => {
   //
@@ -146,25 +170,13 @@ loadShaders().then((shaderSources) => {
   const vertexShaderSource = shaderSources[0];
   const fragmentShaderSource = shaderSources[1];
 
-  const program = createShaderProgram(gl,vertexShaderSource, fragmentShaderSource);
-  const othello = new Othello(program);
+  const program = createShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
+  const othello = new Othello(program, gl);
 
-  //   othello.init(program);
   document.addEventListener("keydown", keyDown);
   document.addEventListener("keyup", keyUp);
 
-  const OnKeys = {
-    left: false,
-    right: false,
-    up: false,
-    down: false,
-    ctrl: false,
-    shift: false,
-    keyK: false,
-    keyJ: false,
-    keyH: false,
-    keyL: false,
-  };
+
 
   function keyDown(event: KeyboardEvent) {
     console.log(event);
@@ -250,17 +262,8 @@ loadShaders().then((shaderSources) => {
   // モデル変換行列。今回は特に何もしません。
   const model = mat4.create();
   mat4.identity(model);
-  // mat4.fromYRotation(model,Math.PI/6);
-  // console.log(model);
-
-  // ビュー変換行列。
-  // 今回はビュー変換行列を変化させ続けて
-  // アニメーションを実現するので、ここでは飛ばします。
 
   // プロジェクション変換行列。
-  // 今回はperspectiveメソッドを使用します。
-  // これは視野角とアスペクト比、near、far、から
-  // 視野錐台を作成してくれるものです。
   const fovY = (60 * Math.PI) / 180;
   const aspect = 1600 / 900;
   const near = 30;
@@ -290,7 +293,7 @@ loadShaders().then((shaderSources) => {
   // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
   let beforeTime = 0;
-  function loop(timestamp:number) {
+  function loop(timestamp: number) {
     const deltaTime = timestamp - beforeTime;
     beforeTime = timestamp;
 
@@ -299,15 +302,19 @@ loadShaders().then((shaderSources) => {
     // ビュー変換行列を用意します。
     showDebug(deltaTime);
 
-    const cameraPosition = [
+    const cameraPosition = Float32Array.of(
       Math.sin(radian) * radius * Math.cos(Xradian) + XZsurfacePosition.x,
       radius * Math.sin(Xradian),
       Math.cos(radian) * radius * Math.cos(Xradian) + XZsurfacePosition.y,
-    ];
-    const lookAtPosition = [XZsurfacePosition.x, 0, XZsurfacePosition.y];
-    const upDirection = [0, 1.0, 0];
+    );
+    const lookAtPosition = Float32Array.of(XZsurfacePosition.x, 0, XZsurfacePosition.y);
+    const upDirection = Float32Array.of(0, 1.0, 0);
     const view = mat4.create();
     mat4.lookAt(view, cameraPosition, lookAtPosition, upDirection);
+    if (gl == null) {
+      console.log("gl is null");
+      process.exit(1);
+    }
     gl.uniformMatrix4fv(viewLocation, false, view);
 
     // 前フレームの内容をクリアします。
@@ -315,18 +322,18 @@ loadShaders().then((shaderSources) => {
 
     // 描画します。
     // gl.drawElements(gl.TRIANGLES, indexSize, gl.UNSIGNED_SHORT, 0);
+    if (modelLocation !== null) {
+      othello.drawStone(modelLocation, deltaTime);
 
-    othello.drawStone(modelLocation, deltaTime);
-
-    gl.flush();
-
+      gl.flush();
+    }
     // 次フレームをリクエストします。
     window.requestAnimationFrame(loop);
   }
 
   window.requestAnimationFrame(loop);
 
-  function keyOperation(deltaTime) {
+  function keyOperation(deltaTime: number) {
     if (OnKeys.keyL) {
       radian += (((1.5 * Math.PI) / 180) * deltaTime) / 10;
     }
@@ -428,7 +435,7 @@ loadShaders().then((shaderSources) => {
 
 function grateScreen() {
   var styles = canvas.getAttribute("style") || "";
-  var onResize = (canvas:HTMLCanvasElement) => {
+  var onResize = (canvas: HTMLCanvasElement) => {
     var scale = Math.min(
       window.innerWidth / canvas.width,
       window.innerHeight / canvas.height
@@ -438,19 +445,19 @@ function grateScreen() {
     canvas.setAttribute(
       "style",
       styles +
-        "    -moz-transform: " +
-        transform +
-        "     -ms-transform: " +
-        transform +
-        "      -o-transform: " +
-        transform +
-        "         transform: " +
-        transform +
-        " -webkit-transform-origin: center center;" +
-        "    -moz-transform-origin: center center;" +
-        "     -ms-transform-origin: center center;" +
-        "      -o-transform-origin: center center;" +
-        "         transform-origin: center center;"
+      "    -moz-transform: " +
+      transform +
+      "     -ms-transform: " +
+      transform +
+      "      -o-transform: " +
+      transform +
+      "         transform: " +
+      transform +
+      " -webkit-transform-origin: center center;" +
+      "    -moz-transform-origin: center center;" +
+      "     -ms-transform-origin: center center;" +
+      "      -o-transform-origin: center center;" +
+      "         transform-origin: center center;"
     );
   };
 
