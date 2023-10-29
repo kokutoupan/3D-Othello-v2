@@ -1,15 +1,8 @@
-const ShaderPATH = "/shader/";
-
 import { mat4 } from "gl-matrix";
 import { MyVec2 } from "./MyVec2";
 import { Othello } from "./Othello";
-
-//const canvas = document.getElementById('canvas');
-
-// const linkElement = document.createElement('link');
-// linkElement.rel = 'stylesheet';
-// linkElement.href = 'styles.css'; // styles.cssのパスを指定
-// document.head.appendChild(linkElement);
+import fragment_shader from "../shader/fragment_shader.glsl";
+import vertex_shader from "../shader/vertex_shader.glsl";
 
 const canvas = document.createElement("canvas");
 canvas.id = "canvas";
@@ -60,16 +53,6 @@ const keyDirectionsArray = [
     KeyS: new MyVec2(-1, 0),
   },
 ];
-
-function loadShaders() {
-  const loadVertexShader = fetch(ShaderPATH + "vertex_shader.glsl").then((res) =>
-    res.text()
-  );
-  const loadFragmentShader = fetch(ShaderPATH + "fragment_shader.glsl").then((res) =>
-    res.text()
-  );
-  return Promise.all([loadVertexShader, loadFragmentShader]);
-}
 
 //シェーダのソースからシェーダプログラムを生成し返す
 function createShaderProgram(
@@ -162,276 +145,275 @@ export const OnKeys = {
   keyH: false,
   keyL: false,
 };
-// シェーダを読み込み終わったら開始します。
-loadShaders().then((shaderSources) => {
-  //
-  // プログラムの作成
-  //
-  const vertexShaderSource = shaderSources[0];
-  const fragmentShaderSource = shaderSources[1];
 
-  const program = createShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
-  const othello = new Othello(program, gl);
+const shaderSources = [vertex_shader, fragment_shader];
 
-  document.addEventListener("keydown", keyDown);
-  document.addEventListener("keyup", keyUp);
+// プログラムの作成
+//
+const vertexShaderSource = shaderSources[0];
+const fragmentShaderSource = shaderSources[1];
+
+const program = createShaderProgram(gl, vertexShaderSource, fragmentShaderSource);
+const othello = new Othello(program, gl);
+
+document.addEventListener("keydown", keyDown);
+document.addEventListener("keyup", keyUp);
 
 
 
-  function keyDown(event: KeyboardEvent) {
-    console.log(event);
-    othello.selectSquare(event.code);
+function keyDown(event: KeyboardEvent) {
+  console.log(event);
+  othello.selectSquare(event.code);
 
-    if (event.code === "ArrowLeft") {
-      OnKeys.left = true;
-    }
-    if (event.code === "ArrowRight") {
-      OnKeys.right = true;
-    }
-    if (event.code === "ArrowUp") {
-      OnKeys.up = true;
-    }
-    if (event.code === "ArrowDown") {
-      OnKeys.down = true;
-    }
-    if (event.code === "ControlLeft") {
-      OnKeys.ctrl = true;
-    }
-    if (event.code === "ShiftLeft") {
-      OnKeys.shift = true;
-    }
-
-    if (event.code === "KeyK") {
-      OnKeys.keyK = true;
-    }
-    if (event.code === "KeyJ") {
-      OnKeys.keyJ = true;
-    }
-    if (event.code === "KeyH") {
-      OnKeys.keyH = true;
-    }
-    if (event.code === "KeyL") {
-      OnKeys.keyL = true;
-    }
+  if (event.code === "ArrowLeft") {
+    OnKeys.left = true;
+  }
+  if (event.code === "ArrowRight") {
+    OnKeys.right = true;
+  }
+  if (event.code === "ArrowUp") {
+    OnKeys.up = true;
+  }
+  if (event.code === "ArrowDown") {
+    OnKeys.down = true;
+  }
+  if (event.code === "ControlLeft") {
+    OnKeys.ctrl = true;
+  }
+  if (event.code === "ShiftLeft") {
+    OnKeys.shift = true;
   }
 
-  function keyUp(event: KeyboardEvent) {
-    if (event.code === "ArrowLeft") {
-      OnKeys.left = false;
-    }
-    if (event.code === "ArrowRight") {
-      OnKeys.right = false;
-    }
-    if (event.code === "ArrowUp") {
-      OnKeys.up = false;
-    }
-    if (event.code === "ArrowDown") {
-      OnKeys.down = false;
-    }
-    if (event.code === "ControlLeft") {
-      OnKeys.ctrl = false;
-    }
-    if (event.code === "ShiftLeft") {
-      OnKeys.shift = false;
-    }
+  if (event.code === "KeyK") {
+    OnKeys.keyK = true;
+  }
+  if (event.code === "KeyJ") {
+    OnKeys.keyJ = true;
+  }
+  if (event.code === "KeyH") {
+    OnKeys.keyH = true;
+  }
+  if (event.code === "KeyL") {
+    OnKeys.keyL = true;
+  }
+}
 
-    if (event.code === "KeyK") {
-      OnKeys.keyK = false;
-    }
-    if (event.code === "KeyJ") {
-      OnKeys.keyJ = false;
-    }
-    if (event.code === "KeyH") {
-      OnKeys.keyH = false;
-    }
-    if (event.code === "KeyL") {
-      OnKeys.keyL = false;
-    }
+function keyUp(event: KeyboardEvent) {
+  if (event.code === "ArrowLeft") {
+    OnKeys.left = false;
+  }
+  if (event.code === "ArrowRight") {
+    OnKeys.right = false;
+  }
+  if (event.code === "ArrowUp") {
+    OnKeys.up = false;
+  }
+  if (event.code === "ArrowDown") {
+    OnKeys.down = false;
+  }
+  if (event.code === "ControlLeft") {
+    OnKeys.ctrl = false;
+  }
+  if (event.code === "ShiftLeft") {
+    OnKeys.shift = false;
   }
 
-  //
-  // 設定の有効化
-  //
-  gl.enable(gl.DEPTH_TEST);
-  gl.enable(gl.CULL_FACE);
-
-  //
-  // uniform変数の設定
-  //
-
-  // モデル変換行列。今回は特に何もしません。
-  const model = mat4.create();
-  mat4.identity(model);
-
-  // プロジェクション変換行列。
-  const fovY = (60 * Math.PI) / 180;
-  const aspect = 1600 / 900;
-  const near = 30;
-  const far = 1600;
-  const projection = mat4.create();
-  mat4.perspective(projection, fovY, aspect, near, far);
-
-  const modelLocation = gl.getUniformLocation(program, "model");
-  const viewLocation = gl.getUniformLocation(program, "view");
-  const projectionLocation = gl.getUniformLocation(program, "projection");
-  //gl.uniformMatrix4fv(modelLocation, false, model);
-  gl.uniformMatrix4fv(projectionLocation, false, projection);
-
-  //
-  // loop用の変数たち
-  //
-
-  //gl.clearColor(0, 1.0, 0.5, 1.0);
-  gl.clearColor(0.015, 0.003, 0.196, 1.0);
-  let radius = 350;
-  let radian = 0;
-  let Xradian = Math.PI / 6;
-  let XZsurfacePosition = new MyVec2(0, 0);
-
-  //let rotation = 0;
-
-  // gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-  let beforeTime = 0;
-  function loop(timestamp: number) {
-    const deltaTime = timestamp - beforeTime;
-    beforeTime = timestamp;
-
-    keyOperation(deltaTime);
-
-    // ビュー変換行列を用意します。
-    showDebug(deltaTime);
-
-    const cameraPosition = Float32Array.of(
-      Math.sin(radian) * radius * Math.cos(Xradian) + XZsurfacePosition.x,
-      radius * Math.sin(Xradian),
-      Math.cos(radian) * radius * Math.cos(Xradian) + XZsurfacePosition.y,
-    );
-    const lookAtPosition = Float32Array.of(XZsurfacePosition.x, 0, XZsurfacePosition.y);
-    const upDirection = Float32Array.of(0, 1.0, 0);
-    const view = mat4.create();
-    mat4.lookAt(view, cameraPosition, lookAtPosition, upDirection);
-    if (gl == null) {
-      console.log("gl is null");
-      process.exit(1);
-    }
-    gl.uniformMatrix4fv(viewLocation, false, view);
-
-    // 前フレームの内容をクリアします。
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    // 描画します。
-    // gl.drawElements(gl.TRIANGLES, indexSize, gl.UNSIGNED_SHORT, 0);
-    if (modelLocation !== null) {
-      othello.drawStone(modelLocation, deltaTime);
-
-      gl.flush();
-    }
-    // 次フレームをリクエストします。
-    window.requestAnimationFrame(loop);
+  if (event.code === "KeyK") {
+    OnKeys.keyK = false;
   }
+  if (event.code === "KeyJ") {
+    OnKeys.keyJ = false;
+  }
+  if (event.code === "KeyH") {
+    OnKeys.keyH = false;
+  }
+  if (event.code === "KeyL") {
+    OnKeys.keyL = false;
+  }
+}
 
+//
+// 設定の有効化
+//
+gl.enable(gl.DEPTH_TEST);
+gl.enable(gl.CULL_FACE);
+
+//
+// uniform変数の設定
+//
+
+// モデル変換行列。今回は特に何もしません。
+const model = mat4.create();
+mat4.identity(model);
+
+// プロジェクション変換行列。
+const fovY = (60 * Math.PI) / 180;
+const aspect = 1600 / 900;
+const near = 30;
+const far = 1600;
+const projection = mat4.create();
+mat4.perspective(projection, fovY, aspect, near, far);
+
+const modelLocation = gl.getUniformLocation(program, "model");
+const viewLocation = gl.getUniformLocation(program, "view");
+const projectionLocation = gl.getUniformLocation(program, "projection");
+//gl.uniformMatrix4fv(modelLocation, false, model);
+gl.uniformMatrix4fv(projectionLocation, false, projection);
+
+//
+// loop用の変数たち
+//
+
+//gl.clearColor(0, 1.0, 0.5, 1.0);
+gl.clearColor(0.015, 0.003, 0.196, 1.0);
+let radius = 350;
+let radian = 0;
+let Xradian = Math.PI / 6;
+let XZsurfacePosition = new MyVec2(0, 0);
+
+//let rotation = 0;
+
+// gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+let beforeTime = 0;
+function loop(timestamp: number) {
+  const deltaTime = timestamp - beforeTime;
+  beforeTime = timestamp;
+
+  keyOperation(deltaTime);
+
+  // ビュー変換行列を用意します。
+  showDebug(deltaTime);
+
+  const cameraPosition = Float32Array.of(
+    Math.sin(radian) * radius * Math.cos(Xradian) + XZsurfacePosition.x,
+    radius * Math.sin(Xradian),
+    Math.cos(radian) * radius * Math.cos(Xradian) + XZsurfacePosition.y,
+  );
+  const lookAtPosition = Float32Array.of(XZsurfacePosition.x, 0, XZsurfacePosition.y);
+  const upDirection = Float32Array.of(0, 1.0, 0);
+  const view = mat4.create();
+  mat4.lookAt(view, cameraPosition, lookAtPosition, upDirection);
+  if (gl == null) {
+    console.log("gl is null");
+    process.exit(1);
+  }
+  gl.uniformMatrix4fv(viewLocation, false, view);
+
+  // 前フレームの内容をクリアします。
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+  // 描画します。
+  // gl.drawElements(gl.TRIANGLES, indexSize, gl.UNSIGNED_SHORT, 0);
+  if (modelLocation !== null) {
+    othello.drawStone(modelLocation, deltaTime);
+
+    gl.flush();
+  }
+  // 次フレームをリクエストします。
   window.requestAnimationFrame(loop);
+}
 
-  function keyOperation(deltaTime: number) {
-    if (OnKeys.keyL) {
-      radian += (((1.5 * Math.PI) / 180) * deltaTime) / 10;
-    }
-    if (OnKeys.keyH) {
-      radian -= (((1.5 * Math.PI) / 180) * deltaTime) / 10;
-    }
-    if (OnKeys.keyK) {
-      Xradian += (((1.5 * Math.PI) / 180) * deltaTime) / 10;
-    }
-    if (OnKeys.keyJ) {
-      Xradian -= (((1.5 * Math.PI) / 180) * deltaTime) / 10;
-    }
-    radian %= Math.PI * 2;
-    if (Xradian > Math.PI / 2.0 - 0.01) {
-      Xradian = Math.PI / 2.0 - 0.01;
-    } else if (Xradian < Math.PI / -2.0 + 0.01) {
-      Xradian = Math.PI / -2.0 + 0.01;
-    }
+window.requestAnimationFrame(loop);
 
-    if (OnKeys.ctrl) {
-      radius += deltaTime;
-    }
-    if (OnKeys.shift) {
-      radius -= deltaTime;
-    }
-    if (radius < 100) {
-      radius = 100;
-    }
-    if (radius > 1400) {
-      radius = 1400;
-    }
-
-    if (OnKeys.up) {
-      XZsurfacePosition.add(new MyVec2(0, -deltaTime));
-    }
-    if (OnKeys.down) {
-      XZsurfacePosition.add(new MyVec2(0, deltaTime));
-    }
-    if (OnKeys.left) {
-      XZsurfacePosition.add(new MyVec2(-deltaTime, 0));
-    }
-    if (OnKeys.right) {
-      XZsurfacePosition.add(new MyVec2(deltaTime, 0));
-    }
-
-    if (XZsurfacePosition.x < -1000) {
-      XZsurfacePosition.x = -1000;
-    } else if (XZsurfacePosition.x > 1000) {
-      XZsurfacePosition.x = 1000;
-    }
-
-    if (XZsurfacePosition.y < -1000) {
-      XZsurfacePosition.y = -1000;
-    } else if (XZsurfacePosition.y > 1000) {
-      XZsurfacePosition.y = 1000;
-    }
-
-    if (
-      Math.PI / 4 > Math.abs(radian) ||
-      (Math.PI / 4) * 7 < Math.abs(radian)
-    ) {
-      othello.keyDirection = keyDirectionsArray[0];
-    } else if (
-      (Math.PI / 4 < radian && radian < (Math.PI / 4) * 3) ||
-      ((-Math.PI / 4) * 7 < radian && radian < (-Math.PI / 4) * 5)
-    ) {
-      othello.keyDirection = keyDirectionsArray[1];
-    } else if (
-      ((Math.PI / 4) * 3 < radian && radian < (Math.PI / 4) * 5) ||
-      ((-Math.PI / 4) * 5 < radian && radian < (-Math.PI / 4) * 3)
-    ) {
-      othello.keyDirection = keyDirectionsArray[2];
-    } else if (
-      ((Math.PI / 4) * 5 < radian && radian < (Math.PI / 4) * 7) ||
-      ((-Math.PI / 4) * 3 < radian && radian < -Math.PI / 4)
-    ) {
-      othello.keyDirection = keyDirectionsArray[3];
-    }
+function keyOperation(deltaTime: number) {
+  if (OnKeys.keyL) {
+    radian += (((1.5 * Math.PI) / 180) * deltaTime) / 10;
+  }
+  if (OnKeys.keyH) {
+    radian -= (((1.5 * Math.PI) / 180) * deltaTime) / 10;
+  }
+  if (OnKeys.keyK) {
+    Xradian += (((1.5 * Math.PI) / 180) * deltaTime) / 10;
+  }
+  if (OnKeys.keyJ) {
+    Xradian -= (((1.5 * Math.PI) / 180) * deltaTime) / 10;
+  }
+  radian %= Math.PI * 2;
+  if (Xradian > Math.PI / 2.0 - 0.01) {
+    Xradian = Math.PI / 2.0 - 0.01;
+  } else if (Xradian < Math.PI / -2.0 + 0.01) {
+    Xradian = Math.PI / -2.0 + 0.01;
   }
 
-  function showDebug(deltaTime: number) {
-    info.innerHTML =
-      " FPS: " +
-      String(Math.round((1000 / deltaTime) * 100) / 100) +
-      "\n" +
-      " Position:\n  (" +
-      Math.round(XZsurfacePosition.x * 100) / 100 +
-      "," +
-      Math.round(XZsurfacePosition.y * 100) / 100 +
-      ")" +
-      "\n" +
-      " Rotate:\n" +
-      "  X-Z:" +
-      Math.round(radian * 100) / 100 +
-      " X-Y:" +
-      Math.round(Xradian * 100) / 100;
+  if (OnKeys.ctrl) {
+    radius += deltaTime;
   }
-});
+  if (OnKeys.shift) {
+    radius -= deltaTime;
+  }
+  if (radius < 100) {
+    radius = 100;
+  }
+  if (radius > 1400) {
+    radius = 1400;
+  }
+
+  if (OnKeys.up) {
+    XZsurfacePosition.add(new MyVec2(0, -deltaTime));
+  }
+  if (OnKeys.down) {
+    XZsurfacePosition.add(new MyVec2(0, deltaTime));
+  }
+  if (OnKeys.left) {
+    XZsurfacePosition.add(new MyVec2(-deltaTime, 0));
+  }
+  if (OnKeys.right) {
+    XZsurfacePosition.add(new MyVec2(deltaTime, 0));
+  }
+
+  if (XZsurfacePosition.x < -1000) {
+    XZsurfacePosition.x = -1000;
+  } else if (XZsurfacePosition.x > 1000) {
+    XZsurfacePosition.x = 1000;
+  }
+
+  if (XZsurfacePosition.y < -1000) {
+    XZsurfacePosition.y = -1000;
+  } else if (XZsurfacePosition.y > 1000) {
+    XZsurfacePosition.y = 1000;
+  }
+
+  if (
+    Math.PI / 4 > Math.abs(radian) ||
+    (Math.PI / 4) * 7 < Math.abs(radian)
+  ) {
+    othello.keyDirection = keyDirectionsArray[0];
+  } else if (
+    (Math.PI / 4 < radian && radian < (Math.PI / 4) * 3) ||
+    ((-Math.PI / 4) * 7 < radian && radian < (-Math.PI / 4) * 5)
+  ) {
+    othello.keyDirection = keyDirectionsArray[1];
+  } else if (
+    ((Math.PI / 4) * 3 < radian && radian < (Math.PI / 4) * 5) ||
+    ((-Math.PI / 4) * 5 < radian && radian < (-Math.PI / 4) * 3)
+  ) {
+    othello.keyDirection = keyDirectionsArray[2];
+  } else if (
+    ((Math.PI / 4) * 5 < radian && radian < (Math.PI / 4) * 7) ||
+    ((-Math.PI / 4) * 3 < radian && radian < -Math.PI / 4)
+  ) {
+    othello.keyDirection = keyDirectionsArray[3];
+  }
+}
+
+function showDebug(deltaTime: number) {
+  info.innerHTML =
+    " FPS: " +
+    String(Math.round((1000 / deltaTime) * 100) / 100) +
+    "\n" +
+    " Position:\n  (" +
+    Math.round(XZsurfacePosition.x * 100) / 100 +
+    "," +
+    Math.round(XZsurfacePosition.y * 100) / 100 +
+    ")" +
+    "\n" +
+    " Rotate:\n" +
+    "  X-Z:" +
+    Math.round(radian * 100) / 100 +
+    " X-Y:" +
+    Math.round(Xradian * 100) / 100;
+}
 
 function grateScreen() {
   var styles = canvas.getAttribute("style") || "";
