@@ -1,5 +1,5 @@
 import { mat4 } from "gl-matrix";
-import { MyVec2,MyVec3 } from "./MyVec";
+import { MyVec2, MyVec3 } from "./MyVec";
 import { Othello } from "./Othello";
 import { keySetup } from "./KeyEvents";
 
@@ -30,30 +30,40 @@ if (infotmp == null) {
 const info = infotmp as HTMLElement;
 info.innerHTML = "FPS:";
 
+const stoneView = document.createElement("div");
+stoneView.innerText = "stoneView\n";
+stoneView.style.position = "absolute";
+stoneView.style.top = "0px";
+stoneView.style.fontSize = "30px";
+document.body.appendChild(stoneView);
+
+stoneView.style.left = document.body.clientWidth / 2 - stoneView.offsetWidth / 2 + "px";
+// console.log(stoneView.offsetWidth);
+
 const keyDirectionsArray = [
   {
-    KeyA: new MyVec2(-1, 0),
-    KeyD: new MyVec2(1, 0),
-    KeyW: new MyVec2(0, -1),
-    KeyS: new MyVec2(0, 1),
+    KeyA: new MyVec3(-1, 0, 0),
+    KeyD: new MyVec3(1, 0, 0),
+    KeyW: new MyVec3(0, -1, 0),
+    KeyS: new MyVec3(0, 1, 0),
   },
   {
-    KeyA: new MyVec2(0, 1),
-    KeyD: new MyVec2(0, -1),
-    KeyW: new MyVec2(-1, 0),
-    KeyS: new MyVec2(1, 0),
+    KeyA: new MyVec3(0, 1, 0),
+    KeyD: new MyVec3(0, -1, 0),
+    KeyW: new MyVec3(-1, 0, 0),
+    KeyS: new MyVec3(1, 0, 0),
   },
   {
-    KeyA: new MyVec2(1, 0),
-    KeyD: new MyVec2(-1, 0),
-    KeyW: new MyVec2(0, 1),
-    KeyS: new MyVec2(0, -1),
+    KeyA: new MyVec3(1, 0, 0),
+    KeyD: new MyVec3(-1, 0, 0),
+    KeyW: new MyVec3(0, 1, 0),
+    KeyS: new MyVec3(0, -1, 0),
   },
   {
-    KeyA: new MyVec2(0, -1),
-    KeyD: new MyVec2(0, 1),
-    KeyW: new MyVec2(1, 0),
-    KeyS: new MyVec2(-1, 0),
+    KeyA: new MyVec3(0, -1, 0),
+    KeyD: new MyVec3(0, 1, 0),
+    KeyW: new MyVec3(1, 0, 0),
+    KeyS: new MyVec3(-1, 0, 0),
   },
 ];
 
@@ -195,7 +205,7 @@ gl.uniformMatrix4fv(projectionLocation, false, projection);
 //
 
 //gl.clearColor(0, 1.0, 0.5, 1.0);
-gl.clearColor(0.015, 0.003, 0.196, 1.0);
+gl.clearColor(0.596, 0.984, 0.596, 1.0);
 let radius = 350;
 let radian = 0;
 let Xradian = Math.PI / 6;
@@ -240,6 +250,10 @@ function loop(timestamp: number) {
 
     gl.flush();
   }
+
+  stoneView.innerHTML = '黒:' + othello.blackStoneNum + " vs 白:" + othello.whiteStoneNum;
+  stoneView.style.left = document.body.clientWidth / 2 - stoneView.offsetWidth / 2 + "px";
+
   // 次フレームをリクエストします。
   window.requestAnimationFrame(loop);
 }

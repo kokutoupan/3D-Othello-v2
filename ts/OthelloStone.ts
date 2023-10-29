@@ -95,6 +95,7 @@ export class OthelloStone {
         this.gl.uniformMatrix4fv(modelLocation, false, modelMat);
 
         this.gl.drawElements(this.gl.TRIANGLES, this.StonesIndexSize, this.gl.UNSIGNED_SHORT, 0);
+        // console.log("draw");
     }
 
     flush(){
