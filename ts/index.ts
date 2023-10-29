@@ -197,23 +197,17 @@ mat4.perspective(projection, fovY, aspect, near, far);
 const modelLocation = gl.getUniformLocation(program, "model");
 const viewLocation = gl.getUniformLocation(program, "view");
 const projectionLocation = gl.getUniformLocation(program, "projection");
-//gl.uniformMatrix4fv(modelLocation, false, model);
 gl.uniformMatrix4fv(projectionLocation, false, projection);
 
 //
 // loop用の変数たち
 //
 
-//gl.clearColor(0, 1.0, 0.5, 1.0);
 gl.clearColor(0.596, 0.984, 0.596, 1.0);
 let radius = 350;
 let radian = 0;
 let Xradian = Math.PI / 6;
 let XZsurfacePosition = new MyVec2(0, 0);
-
-//let rotation = 0;
-
-// gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
 
 let beforeTime = 0;
 function loop(timestamp: number) {
@@ -243,8 +237,6 @@ function loop(timestamp: number) {
   // 前フレームの内容をクリアします。
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // 描画します。
-  // gl.drawElements(gl.TRIANGLES, indexSize, gl.UNSIGNED_SHORT, 0);
   if (modelLocation !== null) {
     othello.drawStone(modelLocation, deltaTime);
 
