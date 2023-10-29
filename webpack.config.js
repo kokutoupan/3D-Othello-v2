@@ -19,7 +19,12 @@ module: {
     test: /\.ts$/,
     // TypeScript をコンパイルする
     use: 'ts-loader'
-    }]
+    },
+    {
+        test: /\.glsl$/,
+        use: 'raw-loader',
+    }
+]
 },
 // import 文で .ts ファイルを解決するため
 resolve: {
