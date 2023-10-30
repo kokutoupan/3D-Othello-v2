@@ -3,6 +3,8 @@ import { MyVec2, MyVec3 } from "./MyVec";
 import { Othello } from "./Othello";
 import { keySetup } from "./KeyEvents";
 
+import "../css/style.css";
+
 //shaderのソースコード
 import fragment_shader from "../shader/fragment_shader.glsl";
 import vertex_shader from "../shader/vertex_shader.glsl";

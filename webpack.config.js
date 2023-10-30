@@ -11,7 +11,7 @@ module.exports = {
     entry: './ts/index.ts',
 
     output: {
-        path: path.join(__dirname, "dist"),
+        path: path.join(__dirname, "docs"),
         filename: "index.js"
     },
 
@@ -27,6 +27,10 @@ module.exports = {
             use: ['raw-loader',
                 'glslify-loader'
             ]
+        },
+        {
+            test: /\.css$/, // .css拡張子を持つファイルを対象にする
+            use: ['style-loader', 'css-loader'], // style-loaderとcss-loaderを使用
         }
         ]
     },
@@ -43,7 +47,7 @@ module.exports = {
     plugins: [
         new HtmlWebpackPlugin({
             template: './index.html',
-            favicon: './favicon.ico'
+            favicon: './favicon.ico',
         })
     ],
 };
