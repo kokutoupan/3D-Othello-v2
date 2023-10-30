@@ -1,4 +1,5 @@
 const path = require('path');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
     // モード値を production に設定すると最適化された状態で、
@@ -38,5 +39,11 @@ module.exports = {
             '.ts',
             '.js' // node_modulesのライブラリ読み込みに必要
         ]
-    }
+    },
+    plugins: [
+        new HtmlWebpackPlugin({
+            template: './index.html',
+            favicon: './favicon.ico'
+        })
+    ],
 };

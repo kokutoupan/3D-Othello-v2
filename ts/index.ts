@@ -243,7 +243,7 @@ function loop(timestamp: number) {
     gl.flush();
   }
 
-  stoneView.innerHTML = '黒:' + othello.blackStoneNum + " vs 白:" + othello.whiteStoneNum;
+  stoneView.innerHTML = '黒:' + othello.blackStoneNum + " vs 白:" + othello.whiteStoneNum + "<br>" + ((othello.turn==1)?"黒":"白") + " のターン";
   stoneView.style.left = document.body.clientWidth / 2 - stoneView.offsetWidth / 2 + "px";
 
   // 次フレームをリクエストします。
