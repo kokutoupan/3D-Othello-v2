@@ -1,4 +1,4 @@
-# 3D-Othello-v2(https://kokutoupan.github.io/3D-Othello-v2/)
+# [3D-Othello-v2]https://kokutoupan.github.io/3D-Othello-v2/)
 
 ## 概要
 3Dのオセロです。
